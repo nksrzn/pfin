@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-brand">
+                <h2>Pfin</h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="upload">
+                        <span>Upload</span>
+                    </a>
+                </li>
+                <li class="nav-separator">—</li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="categorize">
+                        <span>Categorize</span>
+                        <span class="badge" id="categorizeBadge" style="display: none;"></span>
+                    </a>
+                </li>
+                <li class="nav-separator">—</li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="analytics">
+                        <span>Analytics</span>
+                    </a>
+                </li>
+                <li class="nav-separator">—</li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="settings">
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 id="pageTitle">Personal Finance Dashboard</h1>
+                <div class="loading-indicator" id="loadingIndicator" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Upload Data Page -->
+            <div class="page-content" id="uploadPage">
+                <div class="upload-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-file-csv"></i> Upload Transaction CSV</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-area" id="uploadArea">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>Drag & drop your CSV file here or click to browse</p>
+                                    <small>Supported format: CSV with date, amount, description columns<br>
+                                    <em>Note: Use your bank's exported transaction description as-is</em></small>
+                                </div>
+                                <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                            </div>
+                            <div class="upload-status" id="uploadStatus" style="display: none;"></div>
+                            
+                            <!-- CSV Format Guide -->
+                            <div class="csv-format-guide">
+                                <h4><i class="fas fa-table"></i> Expected CSV Format</h4>
+                                <div class="format-columns">
+                                    <div class="format-column">
+                                        <strong>date</strong>
+                                        <span class="format-desc">Transaction date</span>
+                                        <code>yyyy-mm-dd</code>
+                                    </div>
+                                    <div class="format-column">
+                                        <strong>amount</strong>
+                                        <span class="format-desc">Transaction amount (positive for income, negative for expenses)</span>
+                                        <code>-45.67 or 2500.00</code>
+                                    </div>
+                                    <div class="format-column">
+                                        <strong>description</strong>
+                                        <span class="format-desc">Transaction description from bank export - leave as-is</span>
+                                        <code>GROCERY STORE XYZ</code>
+                                    </div>
+                                    <div class="format-column">
+                                        <strong>account</strong>
+                                        <span class="format-desc">Party sending money on incoming transactions</span>
+                                        <code>ACME Corp (employer)</code>
+                                    </div>
+                                    <div class="format-column">
+                                        <strong>payee</strong>
+                                        <span class="format-desc">Party receiving money on outgoing transactions</span>
+                                        <code>SuperMarket ABC</code>
+                                    </div>
+                                    <div class="format-column optional">
+                                        <strong>category</strong>
+                                        <span class="format-desc">Transaction category - leave empty for first upload</span>
+                                        <code>Groceries</code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-info-circle"></i> Current Data</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="current-file-info" id="currentFileInfo">
+                                <p><strong>Last uploaded file:</strong> <span id="lastFileName">None</span></p>
+                                <div class="file-actions" style="display: none;" id="fileActions">
+                                    <button class="btn btn-clear-data" id="clearDataBtn">
+                                        <i class="fas fa-trash-alt"></i> Clear All Data
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categorize Page -->
+            <div class="page-content" id="categorizePage" style="display: none;">
+
+                <!-- Tab Navigation -->
+                <div class="tab-navigation">
+                    <button class="tab-btn active" data-tab="uncategorized">
+                        <span>Uncategorized</span>
+                        <span class="tab-badge" id="uncategorizedBadge">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="categorized">
+                        <span>Categorized</span>
+                        <span class="tab-badge" id="categorizedBadge">0</span>
+                    </button>
+                </div>
+
+                <!-- Uncategorized Transactions Tab -->
+                <div class="tab-content active" id="uncategorizedTab">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Uncategorized Transactions</h3>
+                            <div class="card-actions">
+                                <button class="btn btn-success" id="saveAllCategoriesBtn" style="display: none;">
+                                    <i class="fas fa-save"></i> Save All Changes
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table" id="uncategorizedTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Description</th>
+                                            <th>Account</th>
+                                            <th>Payee</th>
+                                            <th>Category</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="uncategorizedTableBody">
+                                        <!-- Uncategorized transactions will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Categorized Transactions Tab -->
+                <div class="tab-content" id="categorizedTab">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Categorized Transactions</h3>
+                            <div class="card-actions">
+                                <button class="btn btn-secondary" id="downloadTransactionsBtn">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table" id="categorizedTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Description</th>
+                                            <th>Account</th>
+                                            <th>Payee</th>
+                                            <th>Category</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="categorizedTableBody">
+                                        <!-- Categorized transactions will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Page -->
+            <div class="page-content" id="analyticsPage" style="display: none;">
+                <div class="analytics-container">
+                    <!-- 1. Monthly Bottom Line Chart -->
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-line"></i> Monthly Bottom Line</h3>
+                            <div class="filter-controls">
+                                <label for="incomeExpensePeriod">Time Period:</label>
+                                <select id="incomeExpensePeriod" class="form-select">
+                                    <option value="3">Last 3 months</option>
+                                    <option value="6" selected>Last 6 months</option>
+                                    <option value="12">Last 12 months</option>
+                                    <option value="max">All time</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="incomeExpenseChart" class="chart-container">
+                                <!-- Chart will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Cumulative Expenses Chart -->
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-area"></i> Cumulative Expenses by Category</h3>
+                            <div class="filter-controls">
+                                <label for="cumulativeExpensesPeriod">Time Period:</label>
+                                <select id="cumulativeExpensesPeriod" class="form-select">
+                                    <option value="1">Last 1 month</option>
+                                    <option value="3" selected>Last 3 months</option>
+                                    <option value="6">Last 6 months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="cumulativeExpensesChart" class="chart-container">
+                                <!-- Chart will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Expense Groups Chart -->
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-pie-chart"></i> Expense Groups Overview</h3>
+                            <div class="filter-controls">
+                                <label for="expenseGroupsPeriod">Time Period:</label>
+                                <select id="expenseGroupsPeriod" class="form-select">
+                                    <option value="all">All Time</option>
+                                    <option value="1" selected>Last 1 Month</option>
+                                    <option value="3">Last 3 Months</option>
+                                    <option value="6">Last 6 Months</option>
+                                    <option value="12">Last 12 Months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="expenseGroupsChart" class="chart-container">
+                                <!-- Chart will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Expense Groups Deep Dive -->
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-bar"></i> Expense Groups Deep Dive</h3>
+                            <div class="filter-controls">
+                                <label for="expenseGroupsDeepDiveCategory">Category:</label>
+                                <select id="expenseGroupsDeepDiveCategory" class="form-select">
+                                    <option value="all" selected>All Categories</option>
+                                    <!-- Categories will be populated dynamically -->
+                                </select>
+                                <label for="expenseGroupsDeepDivePeriod">Time Period:</label>
+                                <select id="expenseGroupsDeepDivePeriod" class="form-select">
+                                    <option value="all">All Time</option>
+                                    <option value="1" selected>Last 1 Month</option>
+                                    <option value="3">Last 3 Months</option>
+                                    <option value="6">Last 6 Months</option>
+                                    <option value="12">Last 12 Months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="expenseGroupsDeepDiveChart" class="chart-container">
+                                <!-- Chart will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Bank Transactions Table -->
+                    <div class="card filter-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-table"></i> All Transactions</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container" id="bankTransactionsTableContainer">
+                                <table class="transactions-table" id="bankTransactionsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                Date
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="date">▼</button>
+                                                    <div class="filter-menu" id="dateFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search months..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="dateOptions">
+                                                            <!-- Options will be populated dynamically -->
+                                                        </div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                            <th>
+                                                Payee
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="payee">▼</button>
+                                                    <div class="filter-menu" id="payeeFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search payees..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="payeeOptions">
+                                                            <!-- Options will be populated dynamically -->
+                                                        </div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                            <th>
+                                                Amount
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="amount">▼</button>
+                                                    <div class="filter-menu" id="amountFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search amounts..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="amountOptions">
+                                                            <!-- Options will be populated dynamically -->
+                                                        </div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                            <th>
+                                                Category
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="category">▼</button>
+                                                    <div class="filter-menu" id="categoryFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search categories..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="categoryOptions">
+                                                            <!-- Options will be populated dynamically -->
+                                                        </div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                            <th>
+                                                Account
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="account">▼</button>
+                                                    <div class="filter-menu" id="accountFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search accounts..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="accountOptions">
+                                                            <!-- Options will be populated dynamically -->
+                                                        </div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="bankTransactionsTableBody">
+                                        <!-- Transactions will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Page -->
+            <div class="page-content" id="settingsPage" style="display: none;">
+                <div class="settings-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-table"></i> Category Mapping Table</h3>
+                            <div class="card-actions">
+                                <button class="btn btn-primary" id="downloadMappingsBtn">
+                                    <i class="fas fa-download"></i> Download Mappings
+                                </button>
+                                <button class="btn btn-danger" id="resetMappingsBtn">
+                                    <i class="fas fa-undo"></i> Reset Mappings
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mappings-table-container">
+                                <table class="mappings-table" id="mappingsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Value</th>
+                                            <th>Category</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="mappingsTableBody">
+                                        <!-- Mappings will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for confirmations -->
+    <div class="modal" id="confirmModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Confirm Action</h3>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="modalMessage">Are you sure?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="modalCancel">Cancel</button>
+                <button class="btn btn-primary" id="modalConfirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>

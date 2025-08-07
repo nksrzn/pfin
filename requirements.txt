@@ -1,0 +1,21 @@
+# Personal Finance Dashboard - Requirements
+# Clean, minimal requirements with only necessary packages
+
+# Core Data Processing
+pandas>=2.2.0
+numpy>=2.0.0
+
+# FastAPI Backend (Phase 1) 
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+pydantic>=2.5.0
+
+# Streamlit Frontend (Legacy - will be replaced in Phase 2)
+streamlit>=1.45.0
+
+# Visualization
+plotly>=6.0.0
+
+# Optional - Future Features
+aiofiles>=23.2.0

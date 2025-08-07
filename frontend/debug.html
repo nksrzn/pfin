@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug - Personal Finance Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .nav-link { display: block; margin: 10px 0; padding: 10px; background: #f0f0f0; cursor: pointer; }
+        .nav-link.active { background: #007bff; color: white; }
+        .page-content { display: none; margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
+        .status { margin: 10px 0; padding: 10px; background: #e9f7ef; }
+    </style>
+</head>
+<body>
+    <h1>Debug Dashboard</h1>
+    
+    <div class="status" id="status">Initializing...</div>
+    
+    <nav>
+        <div class="nav-link active" data-page="upload">Upload Data</div>
+        <div class="nav-link" data-page="categorize">Categorize</div>
+        <div class="nav-link" data-page="analytics">Analytics</div>
+        <div class="nav-link" data-page="settings">Settings</div>
+    </nav>
+
+    <div class="page-content" id="uploadPage" style="display: block;">
+        <h2>Upload Page</h2>
+        <p>This is the upload page content.</p>
+    </div>
+
+    <div class="page-content" id="categorizePage">
+        <h2>Categorize Page</h2>
+        <p>This is the categorize page content.</p>
+    </div>
+
+    <div class="page-content" id="analyticsPage">
+        <h2>Analytics Page</h2>
+        <p>This is the analytics page content.</p>
+        <div id="apiTest"></div>
+    </div>
+
+    <div class="page-content" id="settingsPage">
+        <h2>Settings Page</h2>
+        <p>This is the settings page content.</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const status = document.getElementById('status');
+            status.textContent = 'DOM loaded, setting up navigation...';
+            
+            // Test API connection
+            fetch('http://127.0.0.1:8000/api/categories/available')
+                .then(response => response.json())
+                .then(data => {
+                    status.textContent = `API working! Found ${data.length} categories.`;
+                })
+                .catch(error => {
+                    status.textContent = `API Error: ${error.message}`;
+                });
+
+            // Setup navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    console.log('Navigation clicked:', e.target.dataset.page);
+                    
+                    // Update navigation
+                    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                    e.target.classList.add('active');
+
+                    // Show/hide pages
+                    document.querySelectorAll('.page-content').forEach(page => {
+                        page.style.display = 'none';
+                    });
+                    
+                    const targetPage = document.getElementById(e.target.dataset.page + 'Page');
+                    if (targetPage) {
+                        targetPage.style.display = 'block';
+                        console.log('Showing page:', e.target.dataset.page);
+                    } else {
+                        console.error('Page not found:', e.target.dataset.page + 'Page');
+                    }
+
+                    // Test analytics API if on analytics page
+                    if (e.target.dataset.page === 'analytics') {
+                        fetch('http://127.0.0.1:8000/api/analytics/overview')
+                            .then(response => response.json())
+                            .then(data => {
+                                document.getElementById('apiTest').innerHTML = 
+                                    `<strong>Analytics API Test:</strong><br>
+                                     Total Income: €${data.total_income}<br>
+                                     Total Expenses: €${data.total_expenses}<br>
+                                     Net Amount: €${data.net_amount}`;
+                            })
+                            .catch(error => {
+                                document.getElementById('apiTest').innerHTML = `API Error: ${error.message}`;
+                            });
+                    }
+                });
+            });
+            
+            console.log('Debug dashboard initialized');
+        });
+    </script>
+</body>
+</html>
