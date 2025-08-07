@@ -1,4 +1,4 @@
-# Personal Finance Dashboard V2.0
+# Pfin: Personal Finance Dashboard
 
 A modern, privacy-first personal finance dashboard with FastAPI backend and clean frontend.
 
@@ -45,7 +45,7 @@ Open your browser and go to:
 - Bulk operations
 
 ### Analytics Dashboard
-- Income vs Expenses line charts
+- Income vs Expenses vs Investments line charts
 - Cumulative spending trends
 - Category breakdown bar charts
 - Transaction scatter plots
@@ -53,7 +53,6 @@ Open your browser and go to:
 
 ### Settings
 - Category mapping management
-- System configuration
 - Data export options
 
 ## 🔒 Privacy First
@@ -125,14 +124,6 @@ Your transaction CSV should include:
 2. Verify static files are served correctly
 3. Clear browser cache
 
-## 📈 Legacy Code
-
-The original Streamlit application has been moved to the `archive/` folder for reference. To run the legacy version:
-
-```bash
-cd archive/
-streamlit run main.py
-```
 
 ---
 
