@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Dashboard - Demo</title>
+    <link rel="stylesheet" href="static/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Demo Banner -->
+        <div class="demo-banner">
+            <div class="demo-content">
+                <i class="fas fa-flask"></i>
+                <span><strong>Demo Mode</strong> - Sample data only. Explore the real project on <a href="https://github.com/nksrzn/pfin" target="_blank" style="color:#fff;text-decoration:underline;display:inline-flex;align-items:center;gap:4px;"><i class="fab fa-github" style="font-size:1rem;"></i><span>GitHub</span></a></span>
+            </div>
+        </div>
+
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-brand">
+                <h2>Pfin <span class="demo-badge">Demo</span></h2>
+            </div>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="upload">
+                        <span>Upload</span>
+                    </a>
+                </li>
+                <li class="nav-separator">—</li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="categorize">
+                        <span>Categorize</span>
+                        <span class="badge" id="categorizeBadge" style="display: none;">0</span>
+                    </a>
+                </li>
+                <li class="nav-separator">—</li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="analytics">
+                        <span>Analytics</span>
+                    </a>
+                </li>
+                <li class="nav-separator">—</li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="settings">
+                        <span>Settings</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 id="pageTitle">Analytics Dashboard</h1>
+                <div class="loading-indicator" id="loadingIndicator" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                </div>
+            </div>
+
+            <!-- Upload Page (Demo - Read Only) -->
+            <div class="page-content" id="uploadPage">
+                <div class="upload-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-file-csv"></i> Upload Transaction CSV (Demo)</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="upload-area demo-disabled" id="uploadArea">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>Drag & drop your CSV file here or click to browse</p>
+                                    <small>Demo mode: Upload disabled.<br><em>Using generated sample data.</em></small>
+                                </div>
+                                <input type="file" id="fileInput" accept=".csv" style="display: none;" disabled>
+                            </div>
+                            <div class="upload-status" id="uploadStatus" style="display: none;"></div>
+                            <div class="csv-format-guide">
+                                <h4><i class="fas fa-table"></i> Expected CSV Format</h4>
+                                <div class="format-columns">
+                                    <div class="format-column"><strong>date</strong><span class="format-desc">yyyy-mm-dd</span><code>2025-08-14</code></div>
+                                    <div class="format-column"><strong>amount</strong><span class="format-desc">Negative expense / positive income</span><code>-45.67</code></div>
+                                    <div class="format-column"><strong>description</strong><span class="format-desc">Raw bank description</span><code>STARBUCKS 1234</code></div>
+                                    <div class="format-column"><strong>account</strong><span class="format-desc">(Optional)</span><code>Checking</code></div>
+                                    <div class="format-column"><strong>payee</strong><span class="format-desc">(Optional)</span><code>Starbucks</code></div>
+                                    <div class="format-column optional"><strong>category</strong><span class="format-desc">(Leave blank first upload)</span><code>Groceries</code></div>
+                                </div>
+                                <div class="demo-notice" style="margin-top:10px;"><i class="fas fa-lock"></i> Uploads are disabled in demo mode.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Page -->
+            <div class="page-content" id="analyticsPage" style="display: none;">
+                <div class="analytics-container">
+                    <!-- 1. Monthly Bottom Line Chart -->
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-line"></i> Monthly Bottom Line</h3>
+                            <div class="filter-controls">
+                                <label for="incomeExpensePeriod">Time Period:</label>
+                                <select id="incomeExpensePeriod" class="form-select">
+                                    <option value="3">Last 3 months</option>
+                                    <option value="6" selected>Last 6 months</option>
+                                    <option value="12">Last 12 months</option>
+                                    <option value="max">All time</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="incomeExpenseChart" class="chart-container">
+                                <!-- Chart will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Cumulative Expenses Chart -->
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-area"></i> Cumulative Expenses by Category</h3>
+                            <div class="filter-controls">
+                                <label for="cumulativeExpensesPeriod">Time Period:</label>
+                                <select id="cumulativeExpensesPeriod" class="form-select">
+                                    <option value="1">Last 1 month</option>
+                                    <option value="3" selected>Last 3 months</option>
+                                    <option value="6">Last 6 months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="cumulativeExpensesChart" class="chart-container">
+                                <!-- Chart will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Expense Groups Chart -->
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-pie-chart"></i> Expense Groups Overview</h3>
+                            <div class="filter-controls">
+                                <label for="expenseGroupsPeriod">Time Period:</label>
+                                <select id="expenseGroupsPeriod" class="form-select">
+                                    <option value="all">All Time</option>
+                                    <option value="1">Last 1 Month</option>
+                                    <option value="3" selected>Last 3 Months</option>
+                                    <option value="6">Last 6 Months</option>
+                                    <option value="12">Last 12 Months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="expenseGroupsChart" class="chart-container">
+                                <!-- Chart will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Expense Groups Deep Dive -->
+                    <div class="card chart-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-chart-bar"></i> Expense Groups Deep Dive</h3>
+                            <div class="filter-controls">
+                                <label for="expenseGroupsDeepDiveCategory">Category:</label>
+                                <select id="expenseGroupsDeepDiveCategory" class="form-select">
+                                    <option value="all" selected>All Categories</option>
+                                    <!-- Categories will be populated dynamically -->
+                                </select>
+                                <label for="expenseGroupsDeepDivePeriod">Time Period:</label>
+                                <select id="expenseGroupsDeepDivePeriod" class="form-select">
+                                    <option value="all">All Time</option>
+                                    <option value="1">Last 1 Month</option>
+                                    <option value="3" selected>Last 3 Months</option>
+                                    <option value="6">Last 6 Months</option>
+                                    <option value="12">Last 12 Months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="expenseGroupsDeepDiveChart" class="chart-container">
+                                <!-- Chart will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Bank Transactions Table (moved from separate page) -->
+                    <div class="card filter-card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-table"></i> All Transactions</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container" id="bankTransactionsTableContainer">
+                                <table class="transactions-table" id="bankTransactionsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                Date
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="date">▼</button>
+                                                    <div class="filter-menu" id="dateFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search months..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="dateOptions"></div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                            <th>
+                                                Payee
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="payee">▼</button>
+                                                    <div class="filter-menu" id="payeeFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search payees..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="payeeOptions"></div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                            <th>
+                                                Amount
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="amount">▼</button>
+                                                    <div class="filter-menu" id="amountFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search amounts..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="amountOptions"></div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                            <th>
+                                                Category
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="category">▼</button>
+                                                    <div class="filter-menu" id="categoryFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search categories..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="categoryOptions"></div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                            <th>
+                                                Account
+                                                <div class="filter-dropdown">
+                                                    <button class="filter-btn" data-column="account">▼</button>
+                                                    <div class="filter-menu" id="accountFilter">
+                                                        <div class="filter-search">
+                                                            <input type="text" placeholder="Search accounts..." class="filter-search-input">
+                                                        </div>
+                                                        <div class="filter-options" id="accountOptions"></div>
+                                                        <div class="filter-actions">
+                                                            <button class="btn-small filter-clear">Clear</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="bankTransactionsTableBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Categorize Page -->
+            <div class="page-content" id="categorizePage" style="display: none;">
+                <!-- Tab Navigation -->
+                <div class="tab-navigation">
+                    <button class="tab-btn active" data-tab="uncategorized">
+                        <span>Uncategorized</span>
+                        <span class="tab-badge" id="uncategorizedBadge">0</span>
+                    </button>
+                    <button class="tab-btn" data-tab="categorized">
+                        <span>Categorized</span>
+                        <span class="tab-badge" id="categorizedBadge">0</span>
+                    </button>
+                </div>
+
+                <!-- Uncategorized Transactions Tab -->
+                <div class="tab-content active" id="uncategorizedTab">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Uncategorized Transactions</h3>
+                            <div class="card-actions">
+                                <button class="btn btn-success" id="saveAllCategoriesBtn" style="display: none;">
+                                    <i class="fas fa-save"></i> Save All Changes
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table" id="uncategorizedTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Description</th>
+                                            <th>Account</th>
+                                            <th>Payee</th>
+                                            <th>Category</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="uncategorizedTableBody">
+                                        <!-- Uncategorized transactions will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Categorized Transactions Tab -->
+                <div class="tab-content" id="categorizedTab">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Categorized Transactions</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-container">
+                                <table class="table" id="categorizedTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Description</th>
+                                            <th>Account</th>
+                                            <th>Payee</th>
+                                            <th>Category</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="categorizedTableBody">
+                                        <!-- Categorized transactions will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Settings Page -->
+            <div class="page-content" id="settingsPage" style="display: none;">
+                <div class="settings-section">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fas fa-table"></i> Category Mapping Table</h3>
+                            <div class="card-actions">
+                                <div class="demo-notice">
+                                    <i class="fas fa-lock"></i> Mappings are read-only in demo mode
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="mappings-table-container">
+                                <table class="mappings-table" id="mappingsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Type</th>
+                                            <th>Value</th>
+                                            <th>Category</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="mappingsTableBody">
+                                        <!-- Mappings will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- JavaScript -->
+        <!-- Scripts -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="./static/demo-app.js"></script>
+</body>
+</html>
