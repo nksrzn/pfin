@@ -748,19 +748,29 @@ class FinanceDashboard {
 
     renderIncomeExpenseChart(data) {
         const plotData = data.plot_data;
+        
+        // Calculate small offset to prevent line overlap when values are equal
+        const maxValue = Math.max(
+            ...plotData.income,
+            ...plotData.expenses,
+            ...plotData.expenses.map((exp, i) => exp + plotData.investment[i])
+        );
+        const offset = maxValue * 0.01; // 1% of max value for small visual separation
+        
         const chartData = [
             {
                 x: plotData.dates,
-                y: plotData.income,
+                y: plotData.income.map(val => val + offset), // Slight upward offset
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Income',
                 line: { color: '#10b981', width: 2 },
-                hovertemplate: '<b>Income</b><br>Date: %{x}<br>Amount: %{y:.2f}<extra></extra>'
+                customdata: plotData.income, // Store original values for hover
+                hovertemplate: '<b>Income</b><br>Date: %{x}<br>Amount: %{customdata:.2f}<extra></extra>'
             },
             {
                 x: plotData.dates,
-                y: plotData.expenses,
+                y: plotData.expenses, // Keep expenses at original position (middle)
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Expenses',
@@ -769,7 +779,7 @@ class FinanceDashboard {
             },
             {
                 x: plotData.dates,
-                y: plotData.expenses.map((exp, i) => exp + plotData.investment[i]),
+                y: plotData.expenses.map((exp, i) => exp + plotData.investment[i] - offset), // Slight downward offset from stacked position
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Investment',
@@ -1579,24 +1589,17 @@ class FinanceDashboard {
         const tbody = document.getElementById('mappingsTableBody');
         tbody.innerHTML = '';
 
-        const mappingRows = [];
-        for (const [type, typeMapping] of Object.entries(mappings)) {
-            for (const [value, category] of Object.entries(typeMapping)) {
-                mappingRows.push({ type, value, category });
-            }
-        }
-
-        mappingRows.forEach(mapping => {
+        mappings.forEach(mapping => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${mapping.type}</td>
-                <td>${mapping.value}</td>
+                <td>${mapping.account}</td>
+                <td>${mapping.payee}</td>
                 <td>${mapping.category}</td>
             `;
             tbody.appendChild(row);
         });
 
-        if (mappingRows.length === 0) {
+        if (mappings.length === 0) {
             const row = document.createElement('tr');
             row.innerHTML = '<td colspan="3" style="text-align: center; color: #64748b;">No mappings found</td>';
             tbody.appendChild(row);

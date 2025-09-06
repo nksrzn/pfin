@@ -1,5 +1,5 @@
 """
-Database manager for local SQLite database.
+Database manager for local SQLite data storage.
 Privacy-first approach - all data stays on user's device.
 """
 import sqlite3
@@ -42,12 +42,12 @@ class LocalDatabaseManager:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS category_mappings (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    mapping_type TEXT NOT NULL,  -- 'payee' or 'account'
-                    mapping_value TEXT NOT NULL,
+                    account TEXT NOT NULL,
+                    payee TEXT NOT NULL,
                     category TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE(mapping_type, mapping_value)
+                    UNIQUE(account, payee)
                 )
             ''')
             
@@ -148,27 +148,29 @@ class LocalDatabaseManager:
             )
             conn.commit()
     
-    def save_category_mapping(self, mapping_type: str, mapping_value: str, category: str):
-        """Save a category mapping for future auto-categorization."""
+    def save_category_mapping(self, account: str, payee: str, category: str):
+        """Save a category mapping for account+payee combination."""
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
                 """INSERT OR REPLACE INTO category_mappings 
-                   (mapping_type, mapping_value, category, updated_at) 
+                   (account, payee, category, updated_at) 
                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)""",
-                (mapping_type, mapping_value.lower(), category)
+                (account.lower(), payee.lower(), category)
             )
             conn.commit()
     
-    def get_category_mappings(self) -> Dict[str, Dict[str, str]]:
+    def get_category_mappings(self) -> Dict[str, str]:
         """Get all category mappings for auto-categorization."""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute(
-                "SELECT mapping_type, mapping_value, category FROM category_mappings"
+                "SELECT account, payee, category FROM category_mappings"
             )
-            mappings = {'payee': {}, 'account': {}}
+            mappings = {}
             
-            for mapping_type, mapping_value, category in cursor.fetchall():
-                mappings[mapping_type][mapping_value.lower()] = category
+            for account, payee, category in cursor.fetchall():
+                # Create a composite key from account and payee
+                composite_key = f"{account.lower()}|{payee.lower()}"
+                mappings[composite_key] = category
                 
             return mappings
     
@@ -187,13 +189,11 @@ class LocalDatabaseManager:
             for transaction_id, account, payee in cursor.fetchall():
                 new_category = None
                 
-                # Check payee mapping first (more specific)
-                if payee and payee.lower() in mappings['payee']:
-                    new_category = mappings['payee'][payee.lower()]
-                
-                # Check account mapping if no payee match
-                elif account and account.lower() in mappings['account']:
-                    new_category = mappings['account'][account.lower()]
+                # Create composite key from account and payee
+                if account and payee:
+                    composite_key = f"{account.lower()}|{payee.lower()}"
+                    if composite_key in mappings:
+                        new_category = mappings[composite_key]
                 
                 # Update if we found a mapping
                 if new_category and new_category != 'Other':

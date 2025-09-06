@@ -105,12 +105,14 @@ async def update_transaction(transaction_id: int, update_data: TransactionUpdate
         if update_data.category:
             db.update_transaction_category(transaction_id, update_data.category)
             
-            # Save category mapping for future auto-categorization
+            # Save category mapping for future auto-categorization using account+payee combination
             transaction_row = df[df["id"] == transaction_id].iloc[0]
-            if transaction_row["payee"]:
-                db.save_category_mapping("payee", transaction_row["payee"], update_data.category)
-            elif transaction_row["account"]:
-                db.save_category_mapping("account", transaction_row["account"], update_data.category)
+            account = transaction_row["account"]
+            payee = transaction_row["payee"]
+            
+            # Only save mapping if both account and payee exist
+            if account and payee:
+                db.save_category_mapping(account, payee, update_data.category)
         
         return SuccessResponse(
             message=f"Transaction {transaction_id} updated successfully"

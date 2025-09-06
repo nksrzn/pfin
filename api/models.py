@@ -43,8 +43,8 @@ class TransactionResponse(TransactionBase):
 
 class CategoryMappingBase(BaseModel):
     """Base category mapping model"""
-    mapping_type: str = Field(..., pattern="^(payee|account)$")
-    mapping_value: str
+    account: str
+    payee: str
     category: str
 
 
