@@ -543,7 +543,7 @@ class FinanceDashboard {
         }
 
         try {
-            // Save all updates
+            // Save all manual updates first
             for (const update of updates) {
                 await this.apiCall(`/transactions/${update.id}`, {
                     method: 'PATCH',
@@ -552,6 +552,17 @@ class FinanceDashboard {
             }
 
             this.showToast(`Successfully updated ${updates.length} transactions`, 'success');
+            
+            // Apply auto-categorization to remaining uncategorized transactions
+            try {
+                const autoResponse = await this.apiCall('/transactions/auto-categorize', { method: 'POST' });
+                if (autoResponse.categorized_count > 0) {
+                    this.showToast(`Auto-categorized ${autoResponse.categorized_count} additional transactions`, 'success');
+                }
+            } catch (autoError) {
+                console.warn('Auto-categorization failed:', autoError);
+                // Don't show error toast for auto-categorization as manual saves were successful
+            }
             
             // Refresh the data
             await this.loadCategorizePageData();
@@ -683,6 +694,14 @@ class FinanceDashboard {
             });
         }
 
+        // Expense Groups Monthly Average checkbox
+        const expenseGroupsMonthlyAvg = document.getElementById('expenseGroupsMonthlyAvg');
+        if (expenseGroupsMonthlyAvg) {
+            expenseGroupsMonthlyAvg.addEventListener('change', () => {
+                this.loadExpenseGroupsChart();
+            });
+        }
+
         // Expense Groups Deep Dive category selector
         const expenseGroupsDeepDiveCategory = document.getElementById('expenseGroupsDeepDiveCategory');
         if (expenseGroupsDeepDiveCategory) {
@@ -736,10 +755,8 @@ class FinanceDashboard {
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Income',
-                line: { color: '#10b981', width: 0.5 },
-                fill: 'tozeroy',
-                fillcolor: 'rgba(16, 185, 129, 0.2)',
-                hovertemplate: '<b>Income</b><br>Date: %{x}<br>Amount: %{y}<extra></extra>'
+                line: { color: '#10b981', width: 2 },
+                hovertemplate: '<b>Income</b><br>Date: %{x}<br>Amount: %{y:.2f}<extra></extra>'
             },
             {
                 x: plotData.dates,
@@ -747,10 +764,8 @@ class FinanceDashboard {
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Expenses',
-                line: { color: '#ec4899', width: 0.5 },
-                fill: 'tozeroy',
-                fillcolor: 'rgba(236, 72, 153, 0.2)',
-                hovertemplate: '<b>Expenses</b><br>Date: %{x}<br>Amount: %{y}<extra></extra>'
+                line: { color: '#ec4899', width: 2 },
+                hovertemplate: '<b>Expenses</b><br>Date: %{x}<br>Amount: %{y:.2f}<extra></extra>'
             },
             {
                 x: plotData.dates,
@@ -758,11 +773,9 @@ class FinanceDashboard {
                 type: 'scatter',
                 mode: 'lines+markers',
                 name: 'Investment',
-                line: { color: '#3b82f6', width: 0.5 },
-                fill: 'tonexty',
-                fillcolor: 'rgba(59, 130, 246, 0.2)',
+                line: { color: '#3b82f6', width: 2 },
                 customdata: plotData.investment,
-                hovertemplate: '<b>Investment</b><br>Date: %{x}<br>Amount: %{customdata}<extra></extra>'
+                hovertemplate: '<b>Investment</b><br>Date: %{x}<br>Amount: %{customdata:.2f}<extra></extra>'
             }
         ];
         const container = document.getElementById('incomeExpenseChart');
@@ -826,7 +839,15 @@ class FinanceDashboard {
         const traces = [];
         const categories = data.categories || [];
         
-        categories.forEach((category, index) => {
+        // Filter out INCOME and INVESTMENT categories - only show expense categories
+        const expenseCategories = categories.filter(category => 
+            category !== 'INCOME' && 
+            category !== 'INVESTMENT' &&
+            category.toLowerCase() !== 'income' &&
+            category.toLowerCase() !== 'investment'
+        );
+        
+        expenseCategories.forEach((category, index) => {
             const categoryData = data.plot_data[category] || [];
             const color = this.getCategoryColor(category);
             traces.push({
@@ -896,8 +917,44 @@ class FinanceDashboard {
 
     renderExpenseGroupsChart(data) {
         const plotData = data.plot_data;
-        // Generate consistent colors for each category with balanced transparency
-        const consistentColors = plotData.labels.map(label => {
+        
+        // Filter out INCOME and INVESTMENT categories - only show expense categories
+        const expenseLabels = plotData.labels.filter(label => 
+            label !== 'INCOME' && 
+            label !== 'INVESTMENT' &&
+            label.toLowerCase() !== 'income' &&
+            label.toLowerCase() !== 'investment'
+        );
+        
+        // Get corresponding values for filtered labels
+        let expenseValues = expenseLabels.map(label => {
+            const index = plotData.labels.indexOf(label);
+            return plotData.values[index];
+        });
+        
+        // Check if Monthly AVG checkbox is checked
+        const monthlyAvgCheckbox = document.getElementById('expenseGroupsMonthlyAvg');
+        const isMonthlyAvg = monthlyAvgCheckbox && monthlyAvgCheckbox.checked;
+        
+        if (isMonthlyAvg) {
+            // Calculate monthly averages based on selected period
+            const periodSelect = document.getElementById('expenseGroupsPeriod');
+            const period = periodSelect ? periodSelect.value : '1';
+            
+            let months = 1;
+            if (period === 'all') {
+                // For 'all time', we need to estimate based on data range
+                // This is a rough estimate - ideally the backend would provide this info
+                months = 12; // Default assumption for 'all time'
+            } else {
+                months = parseInt(period);
+            }
+            
+            expenseValues = expenseValues.map(value => value / months);
+        }
+        
+        // Generate consistent colors for each expense category with balanced transparency
+        const consistentColors = expenseLabels.map(label => {
             const color = this.getCategoryColor(label);
             // Convert hex to rgba with 0.5 opacity for balanced subtle appearance
             const r = parseInt(color.slice(1, 3), 16);
@@ -907,17 +964,17 @@ class FinanceDashboard {
         });
         
         const chartData = [{
-            x: plotData.labels,
-            y: plotData.values,
+            x: expenseLabels,
+            y: expenseValues,
             type: 'bar',
             marker: {
                 color: consistentColors,
                 line: {
-                    color: plotData.labels.map(label => this.getCategoryColor(label)),
+                    color: expenseLabels.map(label => this.getCategoryColor(label)),
                     width: 0.5
                 }
             },
-            text: plotData.values.map(v => v.toFixed(2)),
+            text: expenseValues.map(v => v.toFixed(2)),
             textposition: 'auto'
         }];
         const container = document.getElementById('expenseGroupsChart');
@@ -925,6 +982,10 @@ class FinanceDashboard {
         const rect = container.getBoundingClientRect();
         const width = rect.width || 800;
         const height = rect.height || 500;
+        
+        // Update y-axis title based on monthly average checkbox
+        const yAxisTitle = isMonthlyAvg ? 'Monthly Average Amount' : 'Total Amount';
+        
         const layout = {
             xaxis: { 
                 title: 'Category',
@@ -934,7 +995,7 @@ class FinanceDashboard {
                 side: 'bottom'
             },
             yaxis: { 
-                title: 'Amount',
+                title: yAxisTitle,
                 automargin: true
             },
             margin: { l: 80, r: 30, t: 60, b: 120 },
@@ -1017,16 +1078,24 @@ class FinanceDashboard {
         const scatterData = data.scatter_data || [];
         const dateRange = data.date_range || {};
         
+        // Filter out INCOME and INVESTMENT categories from scatter data
+        const expenseScatterData = scatterData.filter(point => 
+            point.category !== 'INCOME' && 
+            point.category !== 'INVESTMENT' &&
+            point.category.toLowerCase() !== 'income' &&
+            point.category.toLowerCase() !== 'investment'
+        );
+        
         // Group scatter data by category
         const categorizedData = {};
-        scatterData.forEach(point => {
+        expenseScatterData.forEach(point => {
             if (!categorizedData[point.category]) {
                 categorizedData[point.category] = [];
             }
             categorizedData[point.category].push(point);
         });
         
-        // Create traces for each category
+        // Create traces for each expense category
         Object.keys(categorizedData).forEach((category, index) => {
             const categoryPoints = categorizedData[category];
             const color = this.getCategoryColor(category);
@@ -1599,9 +1668,58 @@ class FinanceDashboard {
                     try {
                         await this.apiCall('/uploads/clear-data', { method: 'DELETE' });
                         this.showToast('All data cleared successfully', 'success');
+                        
+                        // Reset frontend state after clearing data
+                        this.transactions = [];
+                        this.categories = [];
+                        this.stats = {};
+                        
+                        // Clear cached chart data
+                        this.lastIncomeExpenseData = null;
+                        this.lastCumulativeExpensesData = null;
+                        this.lastExpenseGroupsData = null;
+                        this.lastExpenseGroupsDeepDiveData = null;
+                        
+                        // Reset upload status display
+                        const uploadStatus = document.getElementById('uploadStatus');
+                        if (uploadStatus) {
+                            uploadStatus.style.display = 'none';
+                            uploadStatus.className = 'upload-status';
+                            uploadStatus.innerHTML = '';
+                        }
+                        
+                        // Clear file input
+                        const fileInput = document.getElementById('fileInput');
+                        if (fileInput) {
+                            fileInput.value = '';
+                        }
+                        
+                        // Update all data displays
                         await this.updateStats();
                         await this.loadUploadPageData();
+                        
+                        // Clear any table displays
+                        const uncategorizedTableBody = document.getElementById('uncategorizedTableBody');
+                        const categorizedTableBody = document.getElementById('categorizedTableBody');
+                        if (uncategorizedTableBody) uncategorizedTableBody.innerHTML = '';
+                        if (categorizedTableBody) categorizedTableBody.innerHTML = '';
+                        
+                        // Clear chart containers
+                        const chartContainers = [
+                            'incomeExpenseChart',
+                            'cumulativeExpensesChart', 
+                            'expenseGroupsChart',
+                            'expenseGroupsDeepDiveChart'
+                        ];
+                        chartContainers.forEach(id => {
+                            const container = document.getElementById(id);
+                            if (container) {
+                                container.innerHTML = '';
+                            }
+                        });
+                        
                     } catch (error) {
+                        console.error('Failed to clear data:', error);
                         this.showToast('Failed to clear data', 'error');
                     }
                 }

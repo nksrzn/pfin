@@ -1248,3 +1248,16 @@ body {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* Fix scrolling for categorize page table containers */
+.page-content#categorizePage .table-container {
+    overflow-y: auto !important;
+    max-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.page-content#categorizePage .table-container table {
+    flex: 1;
+    min-height: 0;
+}
